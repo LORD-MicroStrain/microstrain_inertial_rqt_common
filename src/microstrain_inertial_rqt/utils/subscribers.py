@@ -1,3 +1,4 @@
+import math
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu, MagneticField, NavSatFix
 from microstrain_inertial_msgs.msg import GNSSAidingStatus, GNSSFixInfo, GNSSDualAntennaStatus, FilterStatus, RTKStatusV1, RTKStatus, FilterAidingMeasurementSummary
@@ -277,21 +278,21 @@ class OdomMonitor(SubscriberMonitor):
   @property
   def position_uncertainty_x(self):
     if len(self._current_message.pose.covariance) >= self._MIN_COVARIANCE_SIZE:
-      return self._get_val(self._current_message.pose.covariance[0])
+      return self._get_val(math.sqrt(self._current_message.pose.covariance[0]))
     else:
       return _DEFAULT_VAL
 
   @property
   def position_uncertainty_y(self):
     if len(self._current_message.pose.covariance) >= self._MIN_COVARIANCE_SIZE:
-      return self._get_val(self._current_message.pose.covariance[7])
+      return self._get_val(math.sqrt(self._current_message.pose.covariance[7]))
     else:
       return _DEFAULT_VAL
 
   @property
   def position_uncertainty_z(self):
     if len(self._current_message.pose.covariance) >= self._MIN_COVARIANCE_SIZE:
-      return self._get_val(self._current_message.pose.covariance[14])
+      return self._get_val(math.sqrt(self._current_message.pose.covariance[14]))
     else:
       return _DEFAULT_VAL
 
@@ -310,21 +311,21 @@ class OdomMonitor(SubscriberMonitor):
   @property
   def orientation_uncertainty_x(self):
     if len(self._current_message.pose.covariance) >= self._MIN_COVARIANCE_SIZE:
-      return self._get_val(self._current_message.pose.covariance[21])
+      return self._get_val(math.sqrt(self._current_message.pose.covariance[21]))
     else:
       return _DEFAULT_VAL
 
   @property
   def orientation_uncertainty_y(self):
     if len(self._current_message.pose.covariance) >= self._MIN_COVARIANCE_SIZE:
-      return self._get_val(self._current_message.pose.covariance[28])
+      return self._get_val(math.sqrt(self._current_message.pose.covariance[28]))
     else:
       return _DEFAULT_VAL
 
   @property
   def orientation_uncertainty_z(self):
     if len(self._current_message.pose.covariance) >= self._MIN_COVARIANCE_SIZE:
-      return self._get_val(self._current_message.pose.covariance[35])
+      return self._get_val(math.sqrt(self._current_message.pose.covariance[35]))
     else:
       return _DEFAULT_VAL
 
@@ -343,21 +344,21 @@ class OdomMonitor(SubscriberMonitor):
   @property
   def velocity_uncertainty_x(self):
     if len(self._current_message.twist.covariance) >= self._MIN_COVARIANCE_SIZE:
-      return self._get_val(self._current_message.twist.covariance[0])
+      return self._get_val(math.sqrt(self._current_message.twist.covariance[0]))
     else:
       return _DEFAULT_VAL
 
   @property
   def velocity_uncertainty_y(self):
     if len(self._current_message.twist.covariance) >= self._MIN_COVARIANCE_SIZE:
-      return self._get_val(self._current_message.twist.covariance[7])
+      return self._get_val(math.sqrt(self._current_message.twist.covariance[7]))
     else:
       return _DEFAULT_VAL
 
   @property
   def velocity_uncertainty_z(self):
     if len(self._current_message.twist.covariance) >= self._MIN_COVARIANCE_SIZE:
-      return self._get_val(self._current_message.twist.covariance[14])
+      return self._get_val(math.sqrt(self._current_message.twist.covariance[14]))
     else:
       return _DEFAULT_VAL
 
@@ -593,7 +594,7 @@ class NavSatFixMonitor(SubscriberMonitor):
   @property
   def position_uncertainty(self):
     if len(self._current_message.position_covariance) >= self._MIN_COVARIANCE_SIZE:
-      return self._get_val(self._current_message.position_covariance[0])
+      return self._get_val(math.sqrt(self._current_message.position_covariance[0]))
     else:
       return _DEFAULT_VAL
   
