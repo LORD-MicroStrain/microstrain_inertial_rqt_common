@@ -372,7 +372,7 @@ class OdomMonitor(SubscriberMonitor):
 
   @property
   def position_z_string(self):
-    return self._get_string_units(self.position_x, _UNIT_METERS)
+    return self._get_string_units(self.position_z, _UNIT_METERS)
 
   @property
   def position_uncertainty_x_string(self):
