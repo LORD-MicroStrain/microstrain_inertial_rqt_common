@@ -17,6 +17,10 @@ class GNSSAidingStatusMonitor(SubscriberMonitor):
     super(GNSSAidingStatusMonitor, self).__init__(node, node_name, topic_name, MipFilterGnssPositionAidingStatus)
 
   @property
+  def receiver_id(self):
+    return self._get_val(self._current_message.receiver_id)
+
+  @property
   def tight_coupling(self):
     return self._get_val(self._current_message.status.tight_coupling)
 

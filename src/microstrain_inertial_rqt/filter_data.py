@@ -14,8 +14,7 @@ class FilterDataWidget(MicrostrainWidget):
     self._absolute_odom_monitor = OdomMonitor(self._node, self._node_name, "nav/odom", llh=True)
     self._relative_odom_monitor = OdomMonitor(self._node, self._node_name, "nav/relative_pos/odom", llh=False)
     self._filter_aiding_status_summary_monitor = FilterAidingMeasurementSummaryMonitor(self._node, self._node_name, "nav/aiding_summary")
-    self._gnss_1_aiding_status_monitor = GNSSAidingStatusMonitor(self._node, self._node_name, "gnss1/aiding_status")
-    self._gnss_2_aiding_status_monitor = GNSSAidingStatusMonitor(self._node, self._node_name, "gnss2/aiding_status")
+    self._filter_gnss_aiding_status_monitor = GNSSAidingStatusMonitor(self._node, self._node_name, "mip/ekf/gnss_position_aiding_status")
     self._gnss_dual_antenna_status_monitor = GNSSDualAntennaStatusMonitor(self._node, self._node_name, "nav/dual_antenna_status")
     self._filter_status_monitor = FilterStatusMonitor(self._node, self._node_name, "nav/status", self._device_report_monitor)
 
@@ -108,13 +107,14 @@ class FilterDataWidget(MicrostrainWidget):
     self.filter_aiding_measurements_speed_used.setText(self._filter_aiding_status_summary_monitor.speed_used_string)
 
     # GNSS Aiding Status
-    self.filter_position_aiding_gnss_1_tight_coupling_label.setText(self._gnss_1_aiding_status_monitor.tight_coupling_string)
-    self.filter_position_aiding_gnss_1_differential_label.setText(self._gnss_1_aiding_status_monitor.differential_corrections_string)
-    self.filter_position_aiding_gnss_1_integer_fix_label.setText(self._gnss_1_aiding_status_monitor.integer_fix_string)
-
-    self.filter_position_aiding_gnss_2_tight_coupling_label.setText(self._gnss_2_aiding_status_monitor.tight_coupling_string)
-    self.filter_position_aiding_gnss_2_differential_label.setText(self._gnss_2_aiding_status_monitor.differential_corrections_string)
-    self.filter_position_aiding_gnss_2_integer_fix_label.setText(self._gnss_2_aiding_status_monitor.integer_fix_string)
+    if self._filter_gnss_aiding_status_monitor.receiver_id == 1:
+      self.filter_position_aiding_gnss_1_tight_coupling_label.setText(self._filter_gnss_aiding_status_monitor.tight_coupling_string)
+      self.filter_position_aiding_gnss_1_differential_label.setText(self._filter_gnss_aiding_status_monitor.differential_corrections_string)
+      self.filter_position_aiding_gnss_1_integer_fix_label.setText(self._filter_gnss_aiding_status_monitor.integer_fix_string)
+    elif self._filter_gnss_aiding_status_monitor.receiver_id == 2:
+      self.filter_position_aiding_gnss_2_tight_coupling_label.setText(self._filter_gnss_aiding_status_monitor.tight_coupling_string)
+      self.filter_position_aiding_gnss_2_differential_label.setText(self._filter_gnss_aiding_status_monitor.differential_corrections_string)
+      self.filter_position_aiding_gnss_2_integer_fix_label.setText(self._filter_gnss_aiding_status_monitor.integer_fix_string)
 
     # Dual Antenna Status
     self.filter_dual_antenna_fix_type_label.setText(self._gnss_dual_antenna_status_monitor.fix_type_string)
