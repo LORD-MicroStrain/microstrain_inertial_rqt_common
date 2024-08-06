@@ -1,3 +1,5 @@
+from python_qt_binding.QtWidgets import QLabel
+
 from .utils.widgets import MicrostrainWidget, MicrostrainPlugin
 from .utils.subscribers import GNSSFixInfoMonitor, NavSatFixMonitor
 
@@ -11,10 +13,10 @@ class GNSSDataWidget(MicrostrainWidget):
 
   def _configure(self):
     # Set up the subscriber status monitors
-    self._gnss_1_fix_info_monitor = GNSSFixInfoMonitor(self._node, self._node_name, "gnss1/fix_info")
-    self._gnss_2_fix_info_monitor = GNSSFixInfoMonitor(self._node, self._node_name, "gnss2/fix_info")
-    self._gnss_1_nav_sat_fix_monitor = NavSatFixMonitor(self._node, self._node_name, "gnss1/fix")
-    self._gnss_2_nav_sat_fix_monitor = NavSatFixMonitor(self._node, self._node_name, "gnss2/fix")
+    self._gnss_1_fix_info_monitor = GNSSFixInfoMonitor(self._node, self._node_name, "mip/gnss_1/fix_info")
+    self._gnss_2_fix_info_monitor = GNSSFixInfoMonitor(self._node, self._node_name, "mip/gnss_2/fix_info")
+    self._gnss_1_nav_sat_fix_monitor = NavSatFixMonitor(self._node, self._node_name, "gnss_1/llh_position")
+    self._gnss_2_nav_sat_fix_monitor = NavSatFixMonitor(self._node, self._node_name, "gnss_2/llh_position")
 
     # Hide the warning label
     self.gnss_not_available_label.hide()
@@ -50,9 +52,12 @@ class GNSSDataWidget(MicrostrainWidget):
 
   def _update_gnss_2_data(self):
     # Fix Info
-    self.gnss_2_fix_type_label.setText(self._gnss_2_fix_info_monitor.fix_type_string)
-    self.gnss_2_sv_count_label.setText(self._gnss_2_fix_info_monitor.num_sv_string)
-    self.gnss_2_position_uncertainty_label.setText(self._gnss_2_nav_sat_fix_monitor.position_uncertainty_string)
+    self.gnss_2_widget.findChild(QLabel,'gnss_2_fix_type_label')\
+      .setText(self._gnss_2_fix_info_monitor.fix_type_string)
+    self.gnss_2_widget.findChild(QLabel,'gnss_2_sv_count_label')\
+      .setText(self._gnss_2_fix_info_monitor.num_sv_string)
+    self.gnss_2_widget.findChild(QLabel,'gnss_2_position_uncertainty_label')\
+      .setText(self._gnss_2_nav_sat_fix_monitor.position_uncertainty_string)
 
 
 class GNSSDataPlugin(MicrostrainPlugin):

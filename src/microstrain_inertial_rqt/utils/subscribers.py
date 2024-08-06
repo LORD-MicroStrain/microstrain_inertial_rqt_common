@@ -1,7 +1,9 @@
 import math
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu, MagneticField, NavSatFix
-from microstrain_inertial_msgs.msg import GNSSAidingStatus, GNSSFixInfo, GNSSDualAntennaStatus, FilterStatus, RTKStatusV1, RTKStatus, FilterAidingMeasurementSummary
+#from microstrain_inertial_msgs.msg import GNSSAidingStatus, GNSSFixInfo, GNSSDualAntennaStatus, FilterStatus, RTKStatusV1, RTKStatus, FilterAidingMeasurementSummary
+
+from microstrain_inertial_msgs.msg import HumanReadableStatus, MipGnssFixInfo, MipGnssCorrectionsRtkCorrectionsStatus, MipFilterGnssDualAntennaStatus, MipFilterGnssPositionAidingStatus, MipFilterAidingMeasurementSummary
 
 from .constants import _DEFAULT_VAL, _DEFAULT_STR
 from .constants import _UNIT_DEGREES, _UNIT_GS, _UNIT_GUASSIAN, _UNIT_METERS, _UNIT_RADIANS, _UNIT_METERS_PER_SEC, _UNIT_RADIANS_PER_SEC
@@ -12,35 +14,35 @@ from .common import SubscriberMonitor
 class GNSSAidingStatusMonitor(SubscriberMonitor):
 
   def __init__(self, node, node_name, topic_name):
-    super(GNSSAidingStatusMonitor, self).__init__(node, node_name, topic_name, GNSSAidingStatus)
+    super(GNSSAidingStatusMonitor, self).__init__(node, node_name, topic_name, MipFilterGnssPositionAidingStatus)
 
   @property
   def tight_coupling(self):
-    return self._get_val(self._current_message.tight_coupling)
+    return self._get_val(self._current_message.status.tight_coupling)
 
   @property
   def differential_corrections(self):
-    return self._get_val(self._current_message.differential_corrections)
+    return self._get_val(self._current_message.status.differential)
 
   @property
   def integer_fix(self):
-    return self._get_val(self._current_message.integer_fix)
+    return self._get_val(self._current_message.status.integer_fix)
 
   @property
   def position_fix(self):
-    return self._get_val(self._current_message.has_position_fix)
+    return self._get_val(not self._current_message.status.no_fix)
   
   @property
   def tight_coupling_string(self):
-    return self._get_small_boolean_icon_string(self.tight_coupling)
+    return self._get_small_boolean_icon_string(self.status.tight_coupling)
 
   @property
   def differential_corrections_string(self):
-    return self._get_small_boolean_icon_string(self.differential_corrections)
+    return self._get_small_boolean_icon_string(self.status.differential_corrections)
 
   @property
   def integer_fix_string(self):
-    return self._get_small_boolean_icon_string(self.integer_fix)
+    return self._get_small_boolean_icon_string(self.status.integer_fix)
 
   @property
   def position_fix_string(self):
@@ -50,7 +52,7 @@ class GNSSAidingStatusMonitor(SubscriberMonitor):
 class GNSSFixInfoMonitor(SubscriberMonitor):
 
   def __init__(self, node, node_name, topic_name):
-    super(GNSSFixInfoMonitor, self).__init__(node, node_name, topic_name, GNSSFixInfo)
+    super(GNSSFixInfoMonitor, self).__init__(node, node_name, topic_name, MipGnssFixInfo)
 
   @property
   def fix_type(self):
@@ -64,19 +66,19 @@ class GNSSFixInfoMonitor(SubscriberMonitor):
   def fix_type_string(self):
     fix_type = self.fix_type
     if fix_type is not _DEFAULT_VAL:
-      if fix_type == GNSSFixInfo.FIX_3D:
+      if fix_type == MipGnssFixInfo.FIX_TYPE_FIX_3D:
         return "3D Fix (%d)" % fix_type
-      elif fix_type == GNSSFixInfo.FIX_2D:
+      elif fix_type == MipGnssFixInfo.FIX_TYPE_FIX_2D:
         return "2D Fix (%d)" % fix_type
-      elif fix_type == GNSSFixInfo.FIX_TIME_ONLY:
+      elif fix_type == MipGnssFixInfo.FIX_TYPE_FIX_TIME_ONLY:
         return "Time Only (%d)" % fix_type
-      elif fix_type == GNSSFixInfo.FIX_NONE:
+      elif fix_type == MipGnssFixInfo.FIX_TYPE_FIX_NONE:
         return "None (%d)" % fix_type
-      elif fix_type == GNSSFixInfo.FIX_INVALID:
+      elif fix_type == MipGnssFixInfo.FIX_TYPE_FIX_INVALID:
         return "Invalid Fix (%d)" % fix_type
-      elif fix_type == GNSSFixInfo.FIX_RTK_FLOAT:
+      elif fix_type == MipGnssFixInfo.FIX_TYPE_FIX_RTK_FLOAT:
         return "RTK Float (%d)" % fix_type
-      elif fix_type == GNSSFixInfo.FIX_RTK_FIXED:
+      elif fix_type == MipGnssFixInfo.FIX_TYPE_FIX_RTK_FIXED:
         return "RTK Fixed (%d)" % fix_type
       else:
         return "Invalid (%d)" % fix_type
@@ -90,155 +92,18 @@ class GNSSFixInfoMonitor(SubscriberMonitor):
 class FilterStatusMonitor(SubscriberMonitor):
 
   def __init__(self, node, node_name, topic_name, device_report_monitor):
-    super(FilterStatusMonitor, self).__init__(node, node_name, topic_name, FilterStatus)
+    super(FilterStatusMonitor, self).__init__(node, node_name, topic_name, HumanReadableStatus)
 
     # Save a copy of the device report monitor
     self._device_report_monitor = device_report_monitor
   
   @property
-  def filter_state(self):
+  def filter_state_string(self):
     return self._get_val(self._current_message.filter_state)
 
   @property
-  def status_flags(self):
-    return self._get_val(self._current_message.status_flags)
-
-  @property
-  def filter_state_string(self):
-    filter_state = self.filter_state
-    if filter_state is not _DEFAULT_VAL:
-      # Different status codes between GQ7 and GX5
-      if self._device_report_monitor.is_gq7:
-        if filter_state == 1:
-          return "GQ7 Init (%d)" % filter_state
-        elif filter_state == 2:
-          return "GQ7 Vertical Gyro (%d)" % filter_state
-        elif filter_state == 3:
-          return "GQ7 AHRS (%d)" % filter_state
-        elif filter_state == 4:
-          return "GQ7 Full Nav (%d)" % filter_state
-        else:
-          return "GQ7 Invalid (%d)" % filter_state
-      elif self._device_report_monitor.is_gx5:
-        if filter_state == 0:
-          return "GX5 Startup (%d)" % filter_state
-        elif filter_state == 1:
-          return "GX5 Initialization (%d)" % filter_state
-        elif filter_state == 2:
-          return "GX5 Running, Solution Valid (%d)" % filter_state
-        elif filter_state == 3:
-          return "GX5 Running, Solution Error (%d)" % filter_state
-      else:
-        return "Unknown Device (%d)" % filter_state
-    else:
-      return _DEFAULT_STR
-
-  @property
-  def filter_state_led_string(self):
-    filter_state_string = self.filter_state_string
-    if filter_state_string is not _DEFAULT_STR:
-      # Trim some characters off of the string
-      return filter_state_string[4:-4]
-    else:
-      return filter_state_string
-
-  @property
   def status_flags_string(self):
-    status_flags = self.status_flags
-    if status_flags is not _DEFAULT_VAL:
-      status_str = ""
-      if self._device_report_monitor.is_gq7:
-        # Filter condition
-        if status_flags & 0b11 == 1:
-          status_str += "Stable,"
-        elif status_flags & 0b11 == 2:
-          status_str += "Converging,"
-        elif status_flags & 0b11 == 3:
-          status_str += "Unstable/Recovering,"
-
-        # Estimate Warnings
-        if status_flags & 0b100 != 0:
-          status_str += "Roll/Pitch Warning,"
-        if status_flags & 0b1000 != 0:
-          status_str += "Heading Warning,"
-        if status_flags & 0b10000 != 0:
-          status_str += "Position Warning,"
-        if status_flags & 0b100000 != 0:
-          status_str += "Velocity Warning,"
-        if status_flags & 0b1000000 != 0:
-          status_str += "IMU Bias Warning,"
-        if status_flags & 0b10000000 != 0:
-          status_str += "GNSS Clock Warning,"
-        if status_flags & 0b100000000 != 0:
-          status_str += "Antenna Lever Arm Warning,"
-        if status_flags & 0b1000000000 != 0:
-          status_str += "Mounting Transform Warning,"
-        
-        # Solution Error
-        if status_flags & 0b1111000000000000 != 0:
-          status_str += "Solution Error,"
-      elif self._device_report_monitor.is_gx5:
-        # GX5 needs the filter state to make sense of the status flags
-        filter_state = self.filter_state
-        if filter_state is not _DEFAULT_VAL:
-          # Initialization flags
-          if filter_state == 1:
-            if status_flags & 0b1000000000000 != 0:
-              status_str += "Attutude not initialized,"
-            if status_flags & 0b10000000000000 != 0:
-              status_str += "Position & Velocity not initialized,"
-
-          # Running with error flags
-          elif filter_state in (2, 3):
-            if status_flags & 0b1 != 0:
-              status_str += "IMU unavailable,"
-            if status_flags & 0b10 != 0:
-              status_str += "GNSS,"
-            if status_flags & 0b1000 != 0:
-              status_str += "Matrix Singularity in calculation,"
-            if status_flags & 0b10000 != 0:
-              status_str += "Position covariance high warning,"
-            if status_flags & 0b100000 != 0:
-              status_str += "Velocity covariance high warning,"
-            if status_flags & 0b1000000 != 0:
-              status_str += "Attitude covariance high warning,"
-            if status_flags & 0b10000000 != 0:
-              status_str += "NAN in solution,"
-            if status_flags & 0b100000000 != 0:
-              status_str += "Gyro bias estimate high warning,"
-            if status_flags & 0b1000000000 != 0:
-              status_str += "Accel bias estimate high warning,"
-            if status_flags & 0b10000000000 != 0:
-              status_str += "Gyro scale factor estimate high warning,"
-            if status_flags & 0b100000000000 != 0:
-              status_str += "Accel scale factor estimate high warning,"
-            if status_flags & 0b1000000000000 != 0:
-              status_str += "Mag bias estimate high warning,"
-            if status_flags & 0b10000000000000 != 0:
-              status_str += "GNSS antenna offset correction estimate high warning,"
-            if status_flags & 0b100000000000000 != 0:
-              status_str += "Hard Iron offset estimate high warning,"
-            if status_flags & 0b1000000000000000 != 0:
-              status_str += "Soft iron correction estimate high warning,"
-            if not status_str:
-              status_str = "None,"
-          
-          # No flags if any other case
-          else:
-            status_str = "None,"
-        else:
-          status_str = "Unknown Filter State,"
-      else:
-        status_str = "Uknown Device,"
-
-      # Trim the last comma and return
-      if status_str:
-        return "%s (%d)" % (status_str[:-1], status_flags)
-      else:
-        return "Unknown Status Flags (%d)" % status_flags
-    else:
-      return _DEFAULT_STR
-    
+    return self._get_val(','.join(self._current_message.status_flags))
 
 class OdomMonitor(SubscriberMonitor):
 
@@ -438,7 +303,7 @@ class OdomMonitor(SubscriberMonitor):
 class GNSSDualAntennaStatusMonitor(SubscriberMonitor):
 
   def __init__(self, node, node_name, topic_name):
-    super(GNSSDualAntennaStatusMonitor, self).__init__(node, node_name, topic_name, GNSSDualAntennaStatus)
+    super(GNSSDualAntennaStatusMonitor, self).__init__(node, node_name, topic_name, MipFilterGnssDualAntennaStatus)
   
   @property
   def fix_type(self):
@@ -450,29 +315,29 @@ class GNSSDualAntennaStatusMonitor(SubscriberMonitor):
 
   @property
   def heading_uncertainty(self):
-    return self._get_val(self._current_message.heading_uncertainty)
+    return self._get_val(self._current_message.heading_unc)
   
   @property
   def rec_1_data_valid(self):
-    return bool(self._get_val(self._current_message.rcv_1_valid))
+    return bool(self._get_val(self._current_message.status_flags.rcv_1_valid))
 
   @property
   def rec_2_data_valid(self):
-    return bool(self._get_val(self._current_message.rcv_2_valid))
+    return bool(self._get_val(self._current_message.status_flags.rcv_2_valid))
   
   @property
   def antenna_offsets_valid(self):
-    return bool(self._get_val(self._current_message.antenna_offsets_valid))
+    return bool(self._get_val(self._current_message.status_flags.antenna_offsets_valid))
 
   @property
   def fix_type_string(self):
     fix_type = self.fix_type
     if fix_type is not _DEFAULT_VAL:
-      if fix_type == 0:
+      if fix_type == MipFilterGnssDualAntennaStatus.FIX_TYPE_FIX_NONE:
         return "None (%d)" % fix_type
-      elif fix_type == 1:
+      elif fix_type == MipFilterGnssDualAntennaStatus.FIX_TYPE_FIX_DA_FLOAT:
         return "Float (%d)" % fix_type
-      elif fix_type == 2:
+      elif fix_type == MipFilterGnssDualAntennaStatus.FIX_TYPE_FIX_DA_FIXED:
         return "Fixed (%d)" % fix_type
       else:
         return _DEFAULT_STR
@@ -485,7 +350,7 @@ class GNSSDualAntennaStatusMonitor(SubscriberMonitor):
 
   @property
   def heading_uncertainty_string(self):
-    return self._get_string_units(self.heading_uncertainty, _UNIT_RADIANS)
+    return self._get_string_units(self.heading_unc, _UNIT_RADIANS)
 
   @property
   def rec_1_data_valid_string(self):
@@ -603,6 +468,7 @@ class NavSatFixMonitor(SubscriberMonitor):
     return self._get_string_units(self.position_uncertainty, _UNIT_METERS)
 
 
+# TODO: This should be one class
 class RTKMonitorBase(SubscriberMonitor):
 
   def __init__(self, node, node_name, topic_name, message_type):
@@ -610,47 +476,31 @@ class RTKMonitorBase(SubscriberMonitor):
 
   @property
   def gps_received(self):
-    epoch_status = self._current_message.epoch_status
-    if epoch_status is not _DEFAULT_VAL:
-      return epoch_status & 0b100 != 0
-    else:
-      return _DEFAULT_VAL
+    return self._get_val(self._current_message.epoch_status.gps_received)
 
   @property
   def glonass_received(self):
-    epoch_status = self._current_message.epoch_status
-    if epoch_status is not _DEFAULT_VAL:
-      return epoch_status & 0b1000 != 0
-    else:
-      return _DEFAULT_VAL
+    return self._get_val(self._current_message.epoch_status.glonass_received)
 
   @property
   def galileo_received(self):
-    epoch_status = self._current_message.epoch_status
-    if epoch_status is not _DEFAULT_VAL:
-      return epoch_status & 0b10000 != 0
-    else:
-      return _DEFAULT_VAL
+    return self._get_val(self._current_message.epoch_status.galileo_received)
 
   @property
   def beidou_received(self):
-    epoch_status = self._current_message.epoch_status
-    if epoch_status is not _DEFAULT_VAL:
-      return epoch_status & 0b100000 != 0
-    else:
-      return _DEFAULT_VAL
+    return self._get_val(self._current_message.epoch_status.beidou_received)
   
   @property
   def version(self):
-    return self._get_val(self._current_message.dongle_version)
+    return 2
 
   @property
   def raw_status_flags(self):
-    return self._get_val(self._current_message.raw_status_flags)
+    return 0
 
   @property
   def signal_quality(self):
-    return self._get_val(self._current_message.dongle_signal_quality)
+    return self._get_val(self._current_message.dongle_status.signal_quality)
 
   @property
   def gps_received_string(self):
@@ -688,19 +538,19 @@ class RTKMonitorBase(SubscriberMonitor):
 class RTKMonitor(RTKMonitorBase):
 
   def __init__(self, node, node_name, topic_name):
-    super(RTKMonitor, self).__init__(node, node_name, topic_name, RTKStatus)
+    super(RTKMonitor, self).__init__(node, node_name, topic_name, MipGnssCorrectionsRtkCorrectionsStatus)
 
   @property
   def modem_state(self):
-    return self._get_val(self._current_message.dongle_modem_state)
+    return self._get_val(self._current_message.dongle_status.modem_state)
 
   @property
   def connection_type(self):
-    return self._get_val(self._current_message.dongle_connection_type)
+    return self._get_val(self._current_message.dongle_status.connection_type)
 
   @property
   def rssi(self):
-    rssi = self._current_message.dongle_rssi
+    rssi = self._current_message.dongle_status.rssi
     if rssi is not _DEFAULT_VAL:
       return -rssi
     else:
@@ -708,73 +558,49 @@ class RTKMonitor(RTKMonitorBase):
 
   @property
   def tower_change_indicator(self):
-    tower_change_indicator = self._current_message.dongle_tower_change_indicator
-    if tower_change_indicator is not _DEFAULT_VAL:
-      return tower_change_indicator
-    else:
-      return _DEFAULT_VAL
+    return self._get_val(self._current_message.dongle_status.tower_change_indicator)
 
   @property
   def nmea_timeout(self):
-    nmea_timeout = self._current_message.dongle_nmea_timeout
-    if nmea_timeout is not _DEFAULT_VAL:
-      return nmea_timeout
-    else:
-      return _DEFAULT_VAL
+    return self._get_val(self._current_message.dongle_status.nmea_timeout_flag)
 
   @property
   def server_timeout(self):
-    server_timeout = self._current_message.dongle_server_timeout
-    if server_timeout is not _DEFAULT_VAL:
-      return server_timeout
-    else:
-      return _DEFAULT_VAL
+    return self._get_val(self._current_message.dongle_status.server_timeout_flag)
 
   @property
   def rtcm_timeout(self):
-    rtcm_timeout = self._current_message.dongle_rtcm_timeout
-    if rtcm_timeout is not _DEFAULT_VAL:
-      return rtcm_timeout
-    else:
-      return _DEFAULT_VAL
+    return self._get_val(self._current_message.dongle_status.rtcm_timeout_flag)
 
   @property
   def out_of_range(self):
-    out_of_range = self._current_message.dongle_out_of_range
-    if out_of_range is not _DEFAULT_VAL:
-      return out_of_range
-    else:
-      return _DEFAULT_VAL
+    return self._get_val(self._current_message.dongle_status.device_out_of_range_flag)
 
   @property
   def corrections_unavailable(self):
-    corrections_unavailable = self._current_message.dongle_corrections_unavailable
-    if corrections_unavailable is not _DEFAULT_VAL:
-      return corrections_unavailable
-    else:
-      return _DEFAULT_VAL
+    return self._get_val(self._current_message.dongle_status.corrections_unavailable_flag)
 
   @property
   def modem_state_string(self):
     modem_state = self.modem_state
     if modem_state is not _DEFAULT_VAL:
-      if modem_state == self._current_message.MODEM_STATE_OFF:
+      if modem_state == self._current_message.dongle_status.MODEM_STATE_OFF:
         return "Off (%d)" % modem_state
-      elif modem_state == self._current_message.MODEM_STATE_NO_NETWORK:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_NO_NETWORK:
         return "No Network (%d)" % modem_state
-      elif modem_state == self._current_message.MODEM_STATE_NETWORK_CONNECTED:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_NETWORK_CONNECTED:
         return "Connected (%d)" % modem_state
-      elif modem_state == self._current_message.MODEM_STATE_CONFIGURING_DATA_CONTEXT:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_CONFIGURING_DATA_CONTEXT:
         return "Configuring Data Context (%d)" % modem_state
-      elif modem_state == self._current_message.MODEM_STATE_ACTIVATING_DATA_CONTEXT:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_ACTIVATING_DATA_CONTEXT:
         return "Activating Data Context (%d)" % modem_state
-      elif modem_state == self._current_message.MODEM_STATE_CONFIGURING_SOCKET:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_CONFIGURING_SOCKET:
         return "Configuring Socket (%d)" % modem_state
-      elif modem_state == self._current_message.MODEM_STATE_WAITING_ON_SERVER_HANDSHAKE:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_WAITING_ON_SERVER_HANDSHAKE:
         return "Waiting on Server Handshake (%d)" % modem_state
-      elif modem_state == self._current_message.MODEM_STATE_CONNECTED_AND_IDLE:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_CONNECTED_AND_IDLE:
         return "Connected & Idle (%d)" % modem_state
-      elif modem_state == self._current_message.MODEM_STATE_CONNECTED_AND_STREAMING:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_CONNECTED_AND_STREAMING:
         return "Connected & Streaming (%d)" % modem_state
       else:
         return "Invalid (%d)" % modem_state
@@ -785,15 +611,15 @@ class RTKMonitor(RTKMonitorBase):
   def connection_type_string(self):
     connection_type = self.connection_type
     if connection_type is not _DEFAULT_VAL:
-      if connection_type == self._current_message.CONNECTION_TYPE_NO_CONNECTION:
+      if connection_type == self._current_message.dongle_status.CONNECTION_TYPE_NO_CONNECTION:
         return "No Connection (%d)" % connection_type
-      elif connection_type == self._current_message.CONNECTION_TYPE_CONNECTION_2G:
+      elif connection_type == self._current_message.dongle_status.CONNECTION_TYPE_CONNECTION_2G:
         return "2G (%d)" % connection_type
-      elif connection_type == self._current_message.CONNECTION_TYPE_CONNECTION_3G:
+      elif connection_type == self._current_message.dongle_status.CONNECTION_TYPE_CONNECTION_3G:
         return "3G (%d)" % connection_type
-      elif connection_type == self._current_message.CONNECTION_TYPE_CONNECTION_4G:
+      elif connection_type == self._current_message.dongle_status.CONNECTION_TYPE_CONNECTION_4G:
         return "4G (%d)" % connection_type
-      elif connection_type == self._current_message.CONNECTION_TYPE_CONNECTION_5G:
+      elif connection_type == self._current_message.dongle_status.CONNECTION_TYPE_CONNECTION_5G:
         return "5G (%d)" % connection_type
       else:
         return "Invalid (%d)" % connection_type
@@ -832,183 +658,68 @@ class RTKMonitor(RTKMonitorBase):
   def rtk_led_string(self):
     modem_state = self.modem_state
     if modem_state is not _DEFAULT_VAL:      
-      if modem_state == self._current_message.MODEM_STATE_NO_NETWORK:
+      if modem_state == self._current_message.dongle_status.MODEM_STATE_NO_NETWORK:
         return _ICON_YELLOW_UNCHECKED_MEDIUM
-      elif modem_state == self._current_message.MODEM_STATE_NETWORK_CONNECTED:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_NETWORK_CONNECTED:
         return _ICON_GREEN_CHECKED_MEDIUM
-      elif modem_state == self._current_message.MODEM_STATE_CONFIGURING_DATA_CONTEXT:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_CONFIGURING_DATA_CONTEXT:
         return _ICON_GREEN_CHECKED_MEDIUM
-      elif modem_state == self._current_message.MODEM_STATE_ACTIVATING_DATA_CONTEXT:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_ACTIVATING_DATA_CONTEXT:
         return _ICON_GREEN_CHECKED_MEDIUM
-      elif modem_state == self._current_message.MODEM_STATE_CONFIGURING_SOCKET:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_CONFIGURING_SOCKET:
         return _ICON_GREEN_CHECKED_MEDIUM
-      elif modem_state == self._current_message.MODEM_STATE_WAITING_ON_SERVER_HANDSHAKE:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_WAITING_ON_SERVER_HANDSHAKE:
         return _ICON_GREEN_CHECKED_MEDIUM
-      elif modem_state == self._current_message.MODEM_STATE_CONNECTED_AND_IDLE:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_CONNECTED_AND_IDLE:
         return _ICON_BLUE_CHECKED_MEDIUM
-      elif modem_state == self._current_message.MODEM_STATE_CONNECTED_AND_STREAMING:
+      elif modem_state == self._current_message.dongle_status.MODEM_STATE_CONNECTED_AND_STREAMING:
         return _ICON_BLUE_CHECKED_MEDIUM
     else:
       return _ICON_GREY_UNCHECKED_MEDIUM
 
-
-class RTKMonitorV1(RTKMonitorBase):
-
+class FilterAidingMeasurementSummaryIndicatorMonitor(SubscriberMonitor):
   def __init__(self, node, node_name, topic_name):
-    super(RTKMonitorV1, self).__init__(node, node_name, topic_name, RTKStatusV1)
+    super(FilterAidingMeasurementSummaryIndicatorMonitor, self).__init__(node, node_name, topic_name, MipFilterAidingMeasurementSummary)
 
   @property
-  def controller_state(self):
-    return self._get_val(self._current_message.dongle_controller_state)
-
-  @property
-  def controller_status(self):
-    return self._get_val(self._current_message.dongle_controller_status)
-
-  @property
-  def platform_state(self):
-    return self._get_val(self._current_message.dongle_platform_state)
+  def source(self):
+    return self._get_val(self._current_message.source)
   
   @property
-  def platform_status(self):
-    return self._get_val(self._current_message.dongle_platform_status)
-
-  @property
-  def reset_reason(self):
-    return self._get_val(self._current_message.dongle_reset_reason)
-
-  @property
-  def controller_state_string(self):
-    controller_state = self.controller_state
-    if controller_state is not _DEFAULT_VAL:
-      if controller_state == 0:
-        return "Idle (%d)" % controller_state
-      elif controller_state == 4:
-        return "Active (%d)" % controller_state
-      else:
-        return "Invalid (%d)" % controller_state
-    else:
-      return _DEFAULT_STR
-
-  @property
-  def controller_status_string(self):
-    controller_status = self.controller_status
-    if controller_status is not _DEFAULT_VAL:
-      if controller_status == 0:
-        return "Controller OK (%d)" % controller_status
-      elif controller_status == 1:
-        return "Awaiting NMEA (%d)" % controller_status
-      elif controller_status == 2:
-        return "RTK Timed Out (%d)" % controller_status
-      elif controller_status == 3:
-        return "RTK Unavailable (%d)" % controller_status
-      elif controller_status == 7:
-        return "Invalid Configuration (%d)" % controller_status
-      else:
-        return "Invalid (%d)" % controller_status
-    else:
-      return _DEFAULT_STR
-
-  @property
-  def platform_state_string(self):
-    platform_state = self.platform_state
-    if platform_state is not _DEFAULT_VAL:
-      if platform_state == 0:
-        return "Modem Powered Down (%d)" % platform_state
-      elif platform_state == 1:
-        return "Modem Powering Up (%d)" % platform_state
-      elif platform_state == 2:
-        return "Configuring Modem (%d)" % platform_state
-      elif platform_state == 3:
-        return "Modem Powering Down (%d)" % platform_state
-      elif platform_state == 4:
-        return "Modem Ready (%d)" % platform_state
-      elif platform_state == 5:
-        return "Connecting to Network (%d)" % platform_state
-      elif platform_state == 6:
-        return "Disconnecting from Network (%d)" % platform_state
-      elif platform_state == 7:
-        return "Connected to Network (%d)" % platform_state
-      elif platform_state == 8:
-        return "Connecting to RTK Service (%d)" % platform_state
-      elif platform_state == 9 or platform_state == 10:
-        return "Unable to Connect to RTK Service (%d)" % platform_state
-      elif platform_state == 11:
-        return "Disconnecting From RTK Service (%d)" % platform_state
-      elif platform_state == 12:
-        return "Connected to RTK Service (%d)" % platform_state
-      elif platform_state == 13 or platform_state == 14:
-        return "Device Error (%d)"
-      else:
-        return "Invalid (%d)" % platform_state
-    else:
-      return _DEFAULT_STR
-
-  @property
-  def platform_status_string(self):
-    platform_status = self.platform_status
-    if platform_status is not _DEFAULT_VAL:
-      if platform_status == 0:
-        return "Platform OK (%d)" % platform_status
-      elif platform_status == 4:
-        return "RTK Service Connection Broken (%d)" % platform_status
-      elif platform_status == 6:
-        return "Cell Connection Dropped (%d)" % platform_status
-      elif platform_status == 7:
-        return "Modem Error (%d)" % platform_status
-      else:
-        return "Invalid (%d)" % platform_status
-    else:
-      return _DEFAULT_STR
+  def type(self):
+    return self._get_val(self._current_message.type)
   
   @property
-  def reset_reason_string(self):
-    reset_reason = self.reset_reason
-    if reset_reason is not _DEFAULT_VAL:
-      if reset_reason == 0:
-        return "Power On (%d)" % reset_reason
-      elif reset_reason == 1:
-        return "Unknown (%d)" % reset_reason
-      elif reset_reason == 2:
-        return "Software Reset (%d)" % reset_reason
-      elif reset_reason == 3:
-        return "Hardware Error Reset (%d)" % reset_reason
-      else:
-        return "Invalid (%d)"
-    else:
-      return _DEFAULT_STR
+  def enabled(self):
+    return self._get_val(self._current_message.indicator.enabled)
 
   @property
-  def rtk_led_string(self):
-    platform_state = self.platform_state
-    if platform_state is not _DEFAULT_VAL:
-      if platform_state == 0:
-        return _ICON_GREY_UNCHECKED_MEDIUM
-      elif platform_state in (1, 2, 4, 5):
-        return _ICON_GREEN_UNCHECKED_MEDIUM
-      elif platform_state in (3, 6):
-        return _ICON_GREEN_CHECKED_MEDIUM
-      elif platform_state in (7, 8, 11, 12):
-        low_signal_quality = self.signal_quality is _DEFAULT_VAL or self.signal_quality < 5
-        out_of_range = self.controller_status is _DEFAULT_VAL or self.controller_status == 3
-        if low_signal_quality:
-          return _ICON_TEAL_CHECKED_MEDIUM if out_of_range else _ICON_TEAL_UNCHECKED_MEDIUM
-        else:
-          return _ICON_BLUE_CHECKED_MEDIUM if out_of_range else _ICON_BLUE_UNCHECKED_MEDIUM
-      elif platform_state in (9, 10):
-        return _ICON_RED_UNCHECKED_MEDIUM
-      elif platform_state in (13, 14):
-        return _ICON_RED_CHECKED_MEDIUM
-      else:
-        return _ICON_GREY_UNCHECKED_MEDIUM
-    else:
-      return _ICON_GREY_UNCHECKED_MEDIUM
+  def used(self):
+    return self._get_val(self._current_message.indicator.used)
+  
+  @property
+  def residual_high_warning(self):
+    return self._get_val(self._current_message.indicator.residual_high_warning)
 
+  @property
+  def sample_time_warning(self):
+    return self._get_val(self._current_message.indicator.sample_time_warning)
+  
+  @property
+  def configuration_error(self):
+    return self._get_val(self._current_message.indicator.configuration_error)
+  
+  @property
+  def max_num_meas_exceeded(self):
+    return self._get_val(self._current_message.indicator.max_num_meas_exceeded)
 
 class FilterAidingMeasurementSummaryMonitor(SubscriberMonitor):
 
   def __init__(self, node, node_name, topic_name):
-    super(FilterAidingMeasurementSummaryMonitor, self).__init__(node, node_name, topic_name, FilterAidingMeasurementSummary)
+    super(FilterAidingMeasurementSummaryMonitor, self).__init__(node, node_name, topic_name, MipFilterAidingMeasurementSummary, callback=self._on_message)
+
+  def _on_message(self, message):
+    pass
 
   @property
   def gnss1_enabled(self):
@@ -1132,13 +843,13 @@ class GQ7LedMonitor:
 
   @property
   def gq7_led_icon(self):
-    filter_state = self._filter_status_monitor.filter_state
+    filter_state = self._filter_status_monitor.filter_state_string
     if filter_state is not _DEFAULT_VAL:
-      if filter_state == 1:
+      if filter_state == HumanReadableStatus.FILTER_STATE_GQ7_INIT:
         return _ICON_YELLOW_CHECKED_MEDIUM
-      elif filter_state == 2 or filter_state == 3:
+      elif filter_state == HumanReadableStatus.FILTER_STATE_GQ7_VERT_GYRO or filter_state == HumanReadableStatus.FILTER_STATE_GQ7_AHRS:
         return _ICON_YELLOW_UNCHECKED_MEDIUM
-      elif filter_state == 4:
+      elif filter_state == HumanReadableStatus.FILTER_STATE_GQ7_FULL_NAV:
         gnss_1_differential = self._gnss_1_aiding_status_monitor.differential_corrections
         gnss_2_differential = self._gnss_2_aiding_status_monitor.differential_corrections
         if (gnss_1_differential is not _DEFAULT_VAL and gnss_1_differential) or (gnss_2_differential is not _DEFAULT_VAL and gnss_2_differential):

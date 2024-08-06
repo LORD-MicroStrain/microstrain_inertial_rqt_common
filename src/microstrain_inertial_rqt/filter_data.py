@@ -12,12 +12,13 @@ class FilterDataWidget(MicrostrainWidget):
   def _configure(self):
     # Set up the subscriber status monitors
     self._absolute_odom_monitor = OdomMonitor(self._node, self._node_name, "nav/odom", llh=True)
-    self._relative_odom_monitor = OdomMonitor(self._node, self._node_name, "nav/relative_pos/odom", llh=False)
-    self._filter_aiding_status_summary_monitor = FilterAidingMeasurementSummaryMonitor(self._node, self._node_name, "nav/aiding_summary")
-    self._gnss_1_aiding_status_monitor = GNSSAidingStatusMonitor(self._node, self._node_name, "gnss1/aiding_status")
-    self._gnss_2_aiding_status_monitor = GNSSAidingStatusMonitor(self._node, self._node_name, "gnss2/aiding_status")
-    self._gnss_dual_antenna_status_monitor = GNSSDualAntennaStatusMonitor(self._node, self._node_name, "nav/dual_antenna_status")
-    self._filter_status_monitor = FilterStatusMonitor(self._node, self._node_name, "nav/status", self._device_report_monitor)
+    self._relative_odom_monitor = OdomMonitor(self._node, self._node_name, "ekf/odometry_map", llh=False)
+    # self._filter_aiding_status_summary_monitor = FilterAidingMeasurementSummaryMonitor(self._node, self._node_name, "nav/aiding_summary")
+    # self._gnss_1_aiding_status_monitor = GNSSAidingStatusMonitor(self._node, self._node_name, "mip/ekf/gnss_position_aiding_status")
+    self._gnss_1_aiding_status_monitor = GNSSAidingStatusMonitor(self._node, self._node_name, "mip/gnss_1/aiding_status")
+    self._gnss_2_aiding_status_monitor = GNSSAidingStatusMonitor(self._node, self._node_name, "mip/gnss_2/aiding_status")
+    self._gnss_dual_antenna_status_monitor = GNSSDualAntennaStatusMonitor(self._node, self._node_name, "ekf/dual_antenna_status")
+    self._filter_status_monitor = FilterStatusMonitor(self._node, self._node_name, "ekf/status", self._device_report_monitor)
 
   def run(self):
     # Update data common to all sensors
@@ -41,7 +42,8 @@ class FilterDataWidget(MicrostrainWidget):
 
     # Update device specific data
     if self._device_report_monitor.is_gq7:
-      self._update_aiding_measurements_data()
+      pass
+      # self._update_aiding_measurements_data()
     
   def _update_filter_status_data(self):
     self.filter_state_label.setText(self._filter_status_monitor.filter_state_string)

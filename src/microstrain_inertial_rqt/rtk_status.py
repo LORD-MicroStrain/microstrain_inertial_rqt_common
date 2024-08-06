@@ -1,5 +1,5 @@
 from .utils.widgets import MicrostrainWidget, MicrostrainPlugin
-from .utils.subscribers import RTKMonitor, RTKMonitorV1
+from .utils.subscribers import RTKMonitor
 
 _WIDGET_NAME = 'RTKStatus'
 
@@ -11,8 +11,7 @@ class RTKStatusWidget(MicrostrainWidget):
 
   def _configure(self):
     # Set up the subscriber status monitors
-    self._rtk_status_monitor_v1 = RTKMonitorV1(self._node, self._node_name, "rtk/status_v1")
-    self._rtk_status_monitor = RTKMonitor(self._node, self._node_name, "rtk/status")
+    self._rtk_status_monitor = RTKMonitor(self._node, self._node_name, "mip/gnss_corrections/rtk_corrections_status")
 
     # Hide the warning label
     self.rtk_not_available_label.hide()
@@ -29,32 +28,7 @@ class RTKStatusWidget(MicrostrainWidget):
       self.rtk_widget.show()
 
     # Update device specific data
-    # If v1 dongle is connected, _rtk_status_monitor.version will be 0 or None and _rtk_status_monitor_v1.version will be 0
-    if self._rtk_status_monitor.version != 1 and self._rtk_status_monitor_v1.version == 0:
-      self.rtk_v1_widget.show()
-      self.rtk_v2_widget.hide()
-
-      self._update_rtk_data_v1()
-    # Default to v2
-    else:
-      self.rtk_v2_widget.show()
-      self.rtk_v1_widget.hide()
-
-      self._update_rtk_data_v2()
-    
-  def _update_rtk_data_v1(self):
-    # V1 Status Flags
-    self.rtk_status_flags_mode_label.setText(self._rtk_status_monitor_v1.controller_state_string)
-    self.rtk_status_flags_controller_status_label.setText(self._rtk_status_monitor_v1.controller_status_string)
-    self.rtk_status_flags_device_state_label.setText(self._rtk_status_monitor_v1.platform_state_string)
-    self.rtk_status_flags_connection_status_label.setText(self._rtk_status_monitor_v1.platform_status_string)
-    self.rtk_status_flags_reset_reason_label.setText(self._rtk_status_monitor_v1.reset_reason_string)
-
-    # V1 Controller state icon label
-    self.rtk_led_status_label.setText(self._rtk_status_monitor_v1.controller_status_string)
-
-    # Update common flags
-    self._update_rtk_data(self._rtk_status_monitor_v1)
+    self._update_rtk_data_v2()
     
   def _update_rtk_data_v2(self):
     # V2 Status Flags
@@ -74,6 +48,7 @@ class RTKStatusWidget(MicrostrainWidget):
     # Update common flags
     self._update_rtk_data(self._rtk_status_monitor)
 
+  # TODO: Merge into one function
   def _update_rtk_data(self, rtk_monitor):
     # Epoch Status flags
     self.rtk_corrections_received_gps_label.setText(rtk_monitor.gps_received_string)

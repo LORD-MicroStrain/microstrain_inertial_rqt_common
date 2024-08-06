@@ -1,6 +1,6 @@
 from threading import Thread
 
-from microstrain_inertial_msgs.srv import DeviceReport
+from microstrain_inertial_msgs.srv import MipBaseGetDeviceInformation
 
 from .common import ServiceMonitor
 from .constants import _MICROSTRAIN_ROS_VERISON
@@ -9,7 +9,9 @@ from .constants import _DEFAULT_VAL
 class DeviceReportMonitor(ServiceMonitor):
 
   def __init__(self, node, node_name):
-    super(DeviceReportMonitor, self).__init__(node, node_name, "device_report", DeviceReport, message_timeout=25, poll_interval=5)
+    # super(DeviceReportMonitor, self).__init__(node, node_name, "device_report", \
+    super(DeviceReportMonitor, self).__init__(node, node_name, "mip/base/get_device_information", \
+      MipBaseGetDeviceInformation, message_timeout=25, poll_interval=5)
 
     # Keep track of some booleans so that we can keep track between disconnects
     self._is_gq7 = False
@@ -24,23 +26,23 @@ class DeviceReportMonitor(ServiceMonitor):
 
   @property
   def model_name(self):
-    return self._get_val(self._current_message.model_name)
+    return self._get_val(self._current_message.device_info.model_name)
 
   @property
   def model_number(self):
-    return self._get_val(self._current_message.model_number)
+    return self._get_val(self._current_message.device_info.model_number)
 
   @property
   def serial_number(self):
-    return self._get_val(self._current_message.serial_number)
+    return self._get_val(self._current_message.device_info.serial_number)
 
   @property
   def options(self):
-    return self._get_val(self._current_message.options)
+    return self._get_val(self._current_message.device_info.device_options)
 
   @property
   def firmware_version(self):
-    return self._get_val(self._current_message.firmware_version)
+    return self._get_val(self._current_message.device_info.firmware_version)
 
   @property
   def is_gq7(self):
